@@ -1,0 +1,96 @@
+Metadata-Version: 1.1
+Name: pas.plugin.timelimit
+Version: 1.0
+Summary: PAS plugin that limits user to a certain amount on time (eg 1 hour)
+Home-page: http://svn.plone.org/svn/collective/
+Author: UNKNOWN
+Author-email: UNKNOWN
+License: GPL
+Description: .. contents::
+        
+        .. Note!
+           -----
+           Update the following URLs to point to your:
+        
+           - code repository
+           - bug tracker
+           - questions/comments feedback mail
+           (do not set a real mail, to avoid spams)
+        
+           Or remove it if not used.
+        
+        - Code repository: http://svn.somewhere.com/...
+        - Questions and comments to somemailing_list
+        - Report bugs at http://bug.somewhere.com/..
+        
+        
+        Change history
+        **************
+        
+        1.0 (xxxx-xx-xx)
+        ----------------
+        
+        - Created recipe with ZopeSkel
+          [""].
+        
+        Detailed Documentation
+        **********************
+        
+        Tests for pas.plugin.timelimit
+        
+        test setup
+        ----------
+        
+            >>> from Testing.ZopeTestCase import user_password
+            >>> from Products.Five.testbrowser import Browser
+            >>> browser = Browser()
+        
+        Plugin setup
+        ------------
+        
+            >>> acl_users_url = "%s/acl_users" % self.portal.absolute_url()
+            >>> browser.addHeader('Authorization', 'Basic %s:%s' % ('portal_owner', user_password))
+            >>> browser.open("%s/manage_main" % acl_users_url)
+            >>> browser.url
+            'http://nohost/plone/acl_users/manage_main'
+            >>> form = browser.getForm(index=0)
+            >>> select = form.getControl(name=':action')
+        
+        pas.plugin.timelimit should be in the list of installable plugins:
+        
+            >>> 'Timelimit Helper' in select.displayOptions
+            True
+        
+        and we can select it:
+        
+            >>> select.getControl('Timelimit Helper').click()
+            >>> select.displayValue
+            ['Timelimit Helper']
+            >>> select.value
+            ['manage_addProduct/pas.plugin.timelimit/manage_add_timelimit_helper_form']
+        
+        we add 'Timelimit Helper' to acl_users:
+        
+            >>> from pas.plugin.timelimit.plugin import TimelimitHelper
+            >>> myhelper = TimelimitHelper('myplugin', 'Timelimit Helper')
+            >>> self.portal.acl_users['myplugin'] = myhelper
+        
+        and so on. Continue your tests here
+        
+            >>> 'ALL OK'
+            'ALL OK'
+        
+        
+        Contributors
+        ************
+        
+        "", Author
+        
+        
+        Download
+        ********
+        
+Platform: UNKNOWN
+Classifier: Framework :: Plone
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
