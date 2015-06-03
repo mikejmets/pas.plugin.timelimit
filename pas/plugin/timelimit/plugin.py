@@ -56,8 +56,8 @@ class TimelimitHelper(SessionPlugin):
             return None
 
         minutes = (DateTime() - login_time) * 24 * 60 
-        print "limit = %s; login_time = %s; diff = %s minutes" % (
-                self.timelimit, login_time, minutes)
+        logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
+                self.timelimit, login_time, minutes))
         if minutes > self.timelimit:
             logging.debug('Time %s minutes is up' % self.timelimit)
             user.setMemberProperties({'vouchers': vouchers-1})
