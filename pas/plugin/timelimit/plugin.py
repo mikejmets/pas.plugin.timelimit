@@ -48,7 +48,7 @@ class TimelimitHelper(SessionPlugin):
         user = api.user.get(userid=userid)
         vouchers = user.getProperty('vouchers')
         if not vouchers:
-            logging.debug('No more vouchers')
+            logging.info('No more vouchers')
             return None
 
         login_time = user.getProperty('login_time', None)
@@ -59,7 +59,7 @@ class TimelimitHelper(SessionPlugin):
         logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
                 self.timelimit, login_time, minutes))
         if minutes > self.timelimit:
-            logging.debug('Time %s minutes is up' % self.timelimit)
+            logging.info('Time %s minutes is up' % self.timelimit)
             user.setMemberProperties({'vouchers': vouchers-1})
             return None
         return (info['id'], info['login'])
