@@ -67,7 +67,7 @@ class TimelimitHelper(SessionPlugin):
         logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
                 self.timelimit, login_time, minutes))
         if minutes > self.timelimit:
-            logging.info('Time %s minutes is up' % self.timelimit)
+            logging.debug('Time %s minutes is up' % self.timelimit)
             vouchers = user.getProperty('vouchers')
             if vouchers > 0:
                 decrementVouchers(info['id'])
