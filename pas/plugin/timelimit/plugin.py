@@ -28,7 +28,7 @@ class TimelimitHelper(SessionPlugin):
 
     timelimit = 60
     trusted_referer = ''
-    trusted_login = 'admin'
+    trusted_login = ''
     path = '/'
     cookie_name = '__ac'
     _properties = (
@@ -80,7 +80,8 @@ class TimelimitHelper(SessionPlugin):
     # IAuthenticationPlugin implementation
     def authenticateCredentials(self, credentials):
         #print 'authenticateCredentials'
-        if credentials.get('user_id', '') == self.trusted_login:
+        if self.trusted_login and \
+           self.trusted_login == credentials.get('user_id', ''):
             #print 'authenticateCredentials creds with %s' % self.trusted_login
             return (self.trusted_login, self.trusted_login)
 
