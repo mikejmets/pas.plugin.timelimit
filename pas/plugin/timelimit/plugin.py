@@ -142,8 +142,10 @@ class TimelimitHelper(SessionPlugin):
         """ Extraction Part """
 
         creds = {}
-        referer = request.environ.get('HTTP_REFERER', '')
-        if referer.startswith(self.trusted_referer):
+        referer = request.environ.get('HTTP_REFERER', 'zzzzzzzzzz')
+        if self.trusted_referer and \
+           self.trusted_login and \
+           referer.startswith(self.trusted_referer):
             #print 'extract creds with %s' % self.trusted_login
             creds.update({'user_id':self.trusted_login})
             cookie=self._getCookie(self.trusted_login, request.response)
