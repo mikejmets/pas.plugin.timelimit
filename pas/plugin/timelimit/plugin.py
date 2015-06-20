@@ -1,13 +1,16 @@
 """Class: TimelimitHelper
 """
 
+import binascii
 import interface
 import logging
-from bb.toaster.browser.timelimit.view import decrementVouchers
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from App.class_init import default__class_init__ as InitializeClass
+from App.config import getConfiguration
+from bb.toaster.browser.timelimit.view import decrementVouchers
 from DateTime import DateTime
 from plone import api
+from plone.session import tktauth
 from plone.session.plugins.session import SessionPlugin
 from Products.PluggableAuthService.interfaces import plugins
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
@@ -24,6 +27,10 @@ class TimelimitHelper(SessionPlugin):
     _dont_swallow_my_exceptions = True
 
     timelimit = 60
+    trusted_referer = ''
+    trusted_login = 'admin'
+    path = '/'
+    cookie_name = '__ac'
     _properties = (
             {
                  "id": "timelimit",
@@ -31,6 +38,24 @@ class TimelimitHelper(SessionPlugin):
                  "type": "int",
                  "mode": "w",
              },
+            {
+                 "id": "trusted_login",
+                 "label": "Trusted Login Id",
+                 "type": "string",
+                 "mode": "w",
+             },
+            {
+                 "id": "trusted_referer",
+                 "label": "Trusted Referred Url",
+                 "type": "string",
+                 "mode": "w",
+             },
+            {
+                 "id": "path",
+                 "label": "Cookie path",
+                 "type": "string",
+                 "mode": "w",
+            },
             )
 
     def __init__( self, id=None, title=None , dunno=None):
@@ -54,6 +79,11 @@ class TimelimitHelper(SessionPlugin):
 
     # IAuthenticationPlugin implementation
     def authenticateCredentials(self, credentials):
+        #print 'authenticateCredentials'
+        if credentials.get('user_id', '') == self.trusted_login:
+            #print 'authenticateCredentials creds with %s' % self.trusted_login
+            return (self.trusted_login, self.trusted_login)
+
         info = self._getUserInfo(credentials)
         if info is None:
             return None
@@ -63,6 +93,7 @@ class TimelimitHelper(SessionPlugin):
         if login_time is None:
             return None
 
+        #This never fails, it has side effects on user voucher count
         minutes = (DateTime() - login_time) * 24 * 60 
         logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
                 self.timelimit, login_time, minutes))
@@ -71,9 +102,12 @@ class TimelimitHelper(SessionPlugin):
             vouchers = user.getProperty('vouchers')
             if vouchers > 0:
                 decrementVouchers(info['id'])
+        #print 'auth: %s %s' % (info['id'], info['login'])
         return (info['id'], info['login'])
 
+    # IChallengePlugin implementation
     def challenge(self, request, response):
+        #print 'Challenge'
         creds = self.extractCredentials(request)
         info = self._getUserInfo(creds)
         if info is None:
@@ -86,7 +120,7 @@ class TimelimitHelper(SessionPlugin):
         mt = api.portal.get_tool('portal_membership')
         home = mt.getHomeFolder(id=user.id)
         if not home:
-            print 'No home folder found'
+            #print 'No home folder found'
             return None
         hassurvey = len(
             [v for v in home.values() if v.portal_type == 'bb.toaster.survey'])
@@ -102,11 +136,61 @@ class TimelimitHelper(SessionPlugin):
                 '%s/@@timeuphassurvey' % portal.absolute_url(), lock=1)
             return True
 
+    # IExtractionPlugin implementation
+    def extractCredentials(self, request):
+        """ Extraction Part """
+
+        creds = {}
+        referer = request.environ.get('HTTP_REFERER', '')
+        if referer.startswith(self.trusted_referer):
+            #print 'extract creds with %s' % self.trusted_login
+            creds.update({'user_id':self.trusted_login})
+            cookie=self._getCookie(self.trusted_login, request.response)
+        else:
+            #print 'super extractCredentials'
+            if not self.cookie_name in request:
+                #print 'extractCredentials: cookie name not in request'
+                return creds
+            cookie=request.get(self.cookie_name)
+        try:
+            creds["cookie"]=binascii.a2b_base64(request.get(self.cookie_name))
+        except binascii.Error:
+            # If we have a cookie which is not properly base64 encoded it
+            # can not be ours.
+            #print 'extractCredentials: binascii'
+            return creds
+        creds["source"]="plone.session" # XXX should this be the id?
+
+        #print 'extractCredentials: returns %s' % creds
+        return creds
+
+    def _getCookie(self, userid, response, tokens=(), user_data=''):
+        cookie = tktauth.createTicket(
+            secret=self._getSigningSecret(),
+            userid=userid,
+            tokens=tokens,
+            user_data=user_data,
+            mod_auth_tkt=False,
+            )
+        cookie=binascii.b2a_base64(cookie).rstrip()
+        # disable secure cookie in development mode, to ease local testing
+        if getConfiguration().debug_mode:
+            secure = False
+        else:
+            secure = self.secure
+        options = dict(path=self.path, secure=secure, http_only=True)
+        options['expires'] = 0
+        response.setCookie(self.cookie_name, cookie, **options)
+        cookies = response.cookies
+        return cookies[self.cookie_name]
+
 classImplements(
         TimelimitHelper,
         interface.ITimelimitHelper,
         plugins.IAuthenticationPlugin,
         plugins.IChallengePlugin,
+        plugins.IExtractionPlugin,
+        plugins.ICredentialsUpdatePlugin,
         *implementedBy(SessionPlugin))
 
 InitializeClass( TimelimitHelper )
