@@ -27,7 +27,7 @@ class TimelimitHelper(SessionPlugin):
     _dont_swallow_my_exceptions = True
 
     timelimit = 60
-    trusted_referer = ''
+    trusted_referer = []
     trusted_login = ''
     path = '/'
     cookie_name = '__ac'
@@ -47,7 +47,7 @@ class TimelimitHelper(SessionPlugin):
             {
                  "id": "trusted_referer",
                  "label": "Trusted Referred Url",
-                 "type": "string",
+                 "type": "lines",
                  "mode": "w",
              },
             {
@@ -104,7 +104,7 @@ class TimelimitHelper(SessionPlugin):
             if vouchers > 0:
                 decrementVouchers(info['id'])
         #print 'auth: %s %s' % (info['id'], info['login'])
-        return (info['id'], info['login'])
+        return (info['id'], info['id'])
 
     # IChallengePlugin implementation
     def challenge(self, request, response):
@@ -143,9 +143,14 @@ class TimelimitHelper(SessionPlugin):
 
         creds = {}
         referer = request.environ.get('HTTP_REFERER', 'zzzzzzzzzz')
+        trusted = False
         if self.trusted_referer and \
-           self.trusted_login and \
-           referer.startswith(self.trusted_referer):
+           self.trusted_login:
+            for url in self.trusted_referer:
+                if referer.startswith(url):
+                    trusted = True
+                    break
+        if trusted:
             #print 'extract creds with %s' % self.trusted_login
             creds.update({'user_id':self.trusted_login})
             cookie=self._getCookie(self.trusted_login, request.response)
