@@ -170,7 +170,7 @@ class TimelimitHelper(SessionPlugin):
         except TypeError:
             logging.info(
                 'extractCredentials: TypeError on %s' % self.cookie_name)
-            return creds
+            return {}
         creds["source"]="plone.session" # XXX should this be the id?
 
         #print 'extractCredentials: returns %s' % creds
