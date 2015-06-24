@@ -96,10 +96,10 @@ class TimelimitHelper(SessionPlugin):
 
         #This never fails, it has side effects on user voucher count
         minutes = (DateTime() - login_time) * 24 * 60 
-        logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
+        logging.info("limit = %s; login_time = %s; diff = %s minutes" % (
                 self.timelimit, login_time, minutes))
         if minutes > self.timelimit:
-            logging.debug('Time %s minutes is up' % self.timelimit)
+            logging.info('Time %s minutes is up' % self.timelimit)
             vouchers = user.getProperty('vouchers')
             if vouchers > 0:
                 decrementVouchers(info['id'])
@@ -151,11 +151,11 @@ class TimelimitHelper(SessionPlugin):
                     trusted = True
                     break
         if trusted:
-            #print 'extract creds with %s' % self.trusted_login
+            logging.info('extract creds with %s' % referer)
             creds.update({'user_id':self.trusted_login})
             cookie=self._getCookie(self.trusted_login, request.response)
         else:
-            #print 'super extractCredentials'
+            logging.info('super extractCredentials - %s' % referer)
             if not self.cookie_name in request:
                 #print 'extractCredentials: cookie name not in request'
                 return creds
@@ -166,6 +166,10 @@ class TimelimitHelper(SessionPlugin):
             # If we have a cookie which is not properly base64 encoded it
             # can not be ours.
             #print 'extractCredentials: binascii'
+            return creds
+        except TypeError:
+            logging.info(
+                'extractCredentials: TypeError on %s' % self.cookie_name)
             return creds
         creds["source"]="plone.session" # XXX should this be the id?
 
