@@ -27,8 +27,6 @@ class TimelimitHelper(SessionPlugin):
     _dont_swallow_my_exceptions = True
 
     timelimit = 60
-    trusted_referer = []
-    trusted_login = ''
     path = '/'
     cookie_name = '__ac'
     _properties = (
@@ -36,18 +34,6 @@ class TimelimitHelper(SessionPlugin):
                  "id": "timelimit",
                  "label": "Voucher validity timeout (in minutes)",
                  "type": "int",
-                 "mode": "w",
-             },
-            {
-                 "id": "trusted_login",
-                 "label": "Trusted Login Id",
-                 "type": "string",
-                 "mode": "w",
-             },
-            {
-                 "id": "trusted_referer",
-                 "label": "Trusted Referred Url",
-                 "type": "lines",
                  "mode": "w",
              },
             {
@@ -79,12 +65,8 @@ class TimelimitHelper(SessionPlugin):
 
     # IAuthenticationPlugin implementation
     def authenticateCredentials(self, credentials):
-        #print 'authenticateCredentials'
-        if self.trusted_login and \
-           self.trusted_login == credentials.get('user_id', ''):
-            #print 'authenticateCredentials creds with %s' % self.trusted_login
-            return (self.trusted_login, self.trusted_login)
 
+        #import pdb; pdb.set_trace()
         info = self._getUserInfo(credentials)
         if info is None:
             return None
@@ -92,6 +74,7 @@ class TimelimitHelper(SessionPlugin):
 
         login_time = user.getProperty('login_time', None)
         if login_time is None:
+            logging.debug('TimeLimit: No login time')
             return None
 
         #This never fails, it has side effects on user voucher count
@@ -103,8 +86,7 @@ class TimelimitHelper(SessionPlugin):
             vouchers = user.getProperty('vouchers')
             if vouchers > 0:
                 decrementVouchers(info['id'])
-        #print 'auth: %s %s' % (info['id'], info['login'])
-        return (info['id'], info['id'])
+        return None
 
     # IChallengePlugin implementation
     def challenge(self, request, response):
@@ -203,8 +185,6 @@ classImplements(
         interface.ITimelimitHelper,
         plugins.IAuthenticationPlugin,
         plugins.IChallengePlugin,
-        plugins.IExtractionPlugin,
-        plugins.ICredentialsUpdatePlugin,
         *implementedBy(SessionPlugin))
 
 InitializeClass( TimelimitHelper )
