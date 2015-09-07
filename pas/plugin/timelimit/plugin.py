@@ -96,10 +96,10 @@ class TimelimitHelper(SessionPlugin):
 
         #This never fails, it has side effects on user voucher count
         minutes = (DateTime() - login_time) * 24 * 60 
-        logging.info("limit = %s; login_time = %s; diff = %s minutes" % (
+        logging.debug("limit = %s; login_time = %s; diff = %s minutes" % (
                 self.timelimit, login_time, minutes))
         if minutes > self.timelimit:
-            logging.info('Time %s minutes is up' % self.timelimit)
+            logging.debug('Time %s minutes is up' % self.timelimit)
             vouchers = user.getProperty('vouchers')
             if vouchers > 0:
                 decrementVouchers(info['id'])
@@ -155,25 +155,27 @@ class TimelimitHelper(SessionPlugin):
             creds.update({'user_id':self.trusted_login})
             cookie=self._getCookie(self.trusted_login, request.response)
         else:
-            logging.info('super extractCredentials - %s' % referer)
+            logging.info('extractCredentials SUPER - %s' % referer)
             if not self.cookie_name in request:
-                #print 'extractCredentials: cookie name not in request'
+                logging.info('extractCredentials: cookie name not in request')
                 return creds
             cookie=request.get(self.cookie_name)
         try:
-            creds["cookie"]=binascii.a2b_base64(request.get(self.cookie_name))
+            creds["cookie"]=binascii.a2b_base64(cookie)
         except binascii.Error:
             # If we have a cookie which is not properly base64 encoded it
             # can not be ours.
             #print 'extractCredentials: binascii'
+            logging.info(
+                'extractCredentials: binascii.Error on %s' % self.cookie_name)
             return creds
         except TypeError:
             logging.info(
                 'extractCredentials: TypeError on %s' % self.cookie_name)
-            return {}
+            return creds
         creds["source"]="plone.session" # XXX should this be the id?
 
-        #print 'extractCredentials: returns %s' % creds
+        logging.info('extractCredentials: returns %s' % creds)
         return creds
 
     def _getCookie(self, userid, response, tokens=(), user_data=''):
