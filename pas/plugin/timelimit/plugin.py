@@ -124,24 +124,10 @@ class TimelimitHelper(SessionPlugin):
         """ Extraction Part """
 
         creds = {}
-        referer = request.environ.get('HTTP_REFERER', 'zzzzzzzzzz')
-        trusted = False
-        if self.trusted_referer and \
-           self.trusted_login:
-            for url in self.trusted_referer:
-                if referer.startswith(url):
-                    trusted = True
-                    break
-        if trusted:
-            logging.info('extract creds with %s' % referer)
-            creds.update({'user_id':self.trusted_login})
-            cookie=self._getCookie(self.trusted_login, request.response)
-        else:
-            logging.info('extractCredentials SUPER - %s' % referer)
-            if not self.cookie_name in request:
-                logging.info('extractCredentials: cookie name not in request')
-                return creds
-            cookie=request.get(self.cookie_name)
+        if not self.cookie_name in request:
+            logging.info('extractCredentials: cookie name not in request')
+            return creds
+        cookie=request.get(self.cookie_name)
         try:
             creds["cookie"]=binascii.a2b_base64(cookie)
         except binascii.Error:
